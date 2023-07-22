@@ -50,6 +50,12 @@ void initGame(void)
     gShotVisible = false;
 }
 
+void delay(void)
+{
+    uint16_t count;
+    for (count = 0; count < 300; count++)
+        ;
+}
 
 void playSound(int8_t freq, int16_t duration)
 {
@@ -102,6 +108,15 @@ void displayInstructions(void)
     clrscr();
 }
 
+void killEnemy(uint8_t enemyNum)
+{
+    gShotVisible = false;
+    gScore += (gEnemies[enemyNum].type == ENEMY_COMMODORE ? 10 : 100);
+    gEnemies[enemyNum].type = ENEMY_NONE;
+    playSound(70, 20);
+    gNumEnemies--;
+}
+
 void clearEnemies(void)
 {
     uint8_t enemyNum;
@@ -112,14 +127,10 @@ void clearEnemies(void)
             if ((gShotVisible) &&
                 (gShotX == gEnemies[enemyNum].x) &&
                 (gShotY == gEnemies[enemyNum].y)) {
-                gShotVisible = false;
-                gScore += (gEnemies[enemyNum].type == ENEMY_COMMODORE ? 10 : 100);
-                memset(&gEnemies[enemyNum], 0, sizeof(gEnemies[enemyNum]));
-                playSound(70, 20);
-                gNumEnemies--;
+                killEnemy(enemyNum);
             } else {
                 if (++gEnemies[enemyNum].y >= MAX_Y) {
-                    memset(&gEnemies[enemyNum], 0, sizeof(gEnemies[enemyNum]));
+                    gEnemies[enemyNum].type = ENEMY_NONE;
                     gNumEnemies--;
                 }
             }
@@ -188,11 +199,7 @@ void drawEnemies(void)
             if ((gShotVisible) &&
                 (gShotX == gEnemies[enemyNum].x) &&
                 (gShotY == gEnemies[enemyNum].y)) {
-                gShotVisible = false;
-                playSound(70, 20);
-                gScore += (gEnemies[enemyNum].type == ENEMY_COMMODORE ? 10 : 100);
-                memset(&gEnemies[enemyNum], 0, sizeof(gEnemies[enemyNum]));
-                gNumEnemies--;
+                killEnemy(enemyNum);
                 cputcxy(gShotX, gShotY, ' ');
             } else
                 cputcxy(gEnemies[enemyNum].x, gEnemies[enemyNum].y, gEnemies[enemyNum].type);
@@ -299,13 +306,6 @@ void drawShot(void)
     
     gShotY--;
     cputcxy(gShotX, gShotY, SHOT_CHAR);
-}
-
-void delay(void)
-{
-    uint16_t count;
-    for (count = 0; count < 300; count++)
-        ;
 }
 
 int main(void)
