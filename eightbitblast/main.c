@@ -139,42 +139,43 @@ void clearEnemies(void)
 }
 
 
-void addEnemies(void)
+void addAndDrawEnemies(void)
 {
     uint8_t enemiesToAdd = 0;
     uint8_t random;
-    uint8_t x1;
-    uint8_t x2;
-    uint8_t x3;
+    uint8_t x1 = 0;
+    uint8_t x2 = 0;
+    uint8_t x3 = 0;
     uint8_t enemyNum;
     
-    if (gNumEnemies >= MAX_ENEMIES)
-        return;
-    
-    random = rand() & 0xf;
-    if (random == 0xf)
-        enemiesToAdd = 3;
-    else if (random > 8)
-        enemiesToAdd = 2;
-    else if (random > 2)
-        enemiesToAdd = 1;
-    
-    if (gNumEnemies + enemiesToAdd > MAX_ENEMIES)
-        enemiesToAdd = MAX_ENEMIES - gNumEnemies;
-    
-    if (enemiesToAdd == 0)
-        return;
-    
-    x1 = rand() % MAX_X;
-    do {
-        x2 = rand() % MAX_X;
-    } while (x2 == x1);
-    do {
-        x3 = rand() % MAX_X;
-    } while ((x3 == x1) || (x3 == x2));
+    if (gNumEnemies < MAX_ENEMIES) {
+        random = rand() & 0xf;
+        if (random == 0xf)
+            enemiesToAdd = 3;
+        else if (random > 8)
+            enemiesToAdd = 2;
+        else if (random > 2)
+            enemiesToAdd = 1;
+        
+        if (gNumEnemies + enemiesToAdd > MAX_ENEMIES)
+            enemiesToAdd = MAX_ENEMIES - gNumEnemies;
+        
+        x1 = rand() % MAX_X;
+        if (enemiesToAdd > 1) {
+            do {
+                x2 = rand() % MAX_X;
+            } while (x2 == x1);
+            if (enemiesToAdd > 2) {
+                do {
+                    x3 = rand() % MAX_X;
+                } while ((x3 == x1) || (x3 == x2));
+            }
+        }
+    }
     
     for (enemyNum = 0; enemyNum < MAX_ENEMIES; enemyNum++) {
-        if (gEnemies[enemyNum].type == ENEMY_NONE) {
+        if ((gEnemies[enemyNum].type == ENEMY_NONE) &&
+            (enemiesToAdd > 0)) {
             gNumEnemies++;
             gEnemies[enemyNum].y = 1;
             gEnemies[enemyNum].type = (((rand() & 0xf) > 0xc) ? ENEMY_ATARI : ENEMY_COMMODORE);
@@ -184,17 +185,9 @@ void addEnemies(void)
                 gEnemies[enemyNum].x = x2;
             } else {
                 gEnemies[enemyNum].x = x1;
-                return;
             }
             enemiesToAdd--;
         }
-    }
-}
-
-void drawEnemies(void)
-{
-    uint8_t enemyNum;
-    for (enemyNum = 0; enemyNum < MAX_ENEMIES; enemyNum++) {
         if (gEnemies[enemyNum].type != ENEMY_NONE) {
             if ((gShotVisible) &&
                 (gShotX == gEnemies[enemyNum].x) &&
@@ -316,8 +309,7 @@ int main(void)
         gotoxy(0, 0);
         cprintf("  SCORE: %lu", gScore);
         clearEnemies();
-        addEnemies();
-        drawEnemies();
+        addAndDrawEnemies();
         drawHero();
         drawShot();
         delay();
