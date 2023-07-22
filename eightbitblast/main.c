@@ -322,6 +322,5 @@ int main(void)
         drawShot();
         delay();
     }
-    cgetc();
     return 0;
 }
