@@ -65,6 +65,7 @@
 		9DDFD4D72A6B67B900C8EABD /* eightbitblast.xcscheme */ = {isa = PBXFileReference; lastKnownFileType = text.xml; name = eightbitblast.xcscheme; path = ../../eightbitblast.xcodeproj/xcshareddata/xcschemes/eightbitblast.xcscheme; sourceTree = "<group>"; };
 		9DDFD4E72A6B8C3000C8EABD /* README.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = README.md; sourceTree = "<group>"; };
 		9DDFD4E82A6B8C6B00C8EABD /* LICENSE */ = {isa = PBXFileReference; lastKnownFileType = text; path = LICENSE; sourceTree = "<group>"; };
+		9DDFD4E92A6B93A100C8EABD /* 8BitBlast.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = 8BitBlast.png; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -84,6 +85,7 @@
 			isa = PBXGroup;
 			children = (
 				9DDFD4E72A6B8C3000C8EABD /* README.md */,
+				9DDFD4E92A6B93A100C8EABD /* 8BitBlast.png */,
 				9DDFD4E82A6B8C6B00C8EABD /* LICENSE */,
 				9DDFD4BA2A6B67B900C8EABD /* eightbitblast */,
 				9DDFD4B22A6B67B900C8EABD /* Products */,
