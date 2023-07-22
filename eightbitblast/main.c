@@ -15,22 +15,51 @@
 #include <conio.h>
 
 #define MAX_ENEMIES 50
-#define SHOT_CHAR '!'
-#define HERO_CHAR '@'
+#define SHOT_CHAR ('!' | (char)0x80)
+#define HERO_CHAR ('@' | (char)0x80)
+#define SPACE_CHAR (' ' | (char)0x80)
+#define STAR_CHAR ('*' | (char)0x80)
 #define MAX_X 40
 #define MAX_Y 24
 
 typedef enum tEnemyType {
     ENEMY_NONE = 0,
-    ENEMY_COMMODORE = 'C',
-    ENEMY_ATARI = 'A'
+    ENEMY_COMMODORE = 'C' | (char)0x80,
+    ENEMY_ATARI = 'A' | (char)0x80
 } tEnemyType;
 
 typedef struct tEnemy {
+    tEnemyType type;
     uint8_t x;
     uint8_t y;
-    tEnemyType type;
 } tEnemy;
+
+char * gScreenAddrs[MAX_Y] = {
+    (char *)0x400,
+    (char *)0x480,
+    (char *)0x500,
+    (char *)0x580,
+    (char *)0x600,
+    (char *)0x680,
+    (char *)0x700,
+    (char *)0x780,
+    (char *)0x428,
+    (char *)0x4A8,
+    (char *)0x528,
+    (char *)0x5A8,
+    (char *)0x628,
+    (char *)0x6A8,
+    (char *)0x728,
+    (char *)0x7A8,
+    (char *)0x450,
+    (char *)0x4D0,
+    (char *)0x550,
+    (char *)0x5D0,
+    (char *)0x650,
+    (char *)0x6D0,
+    (char *)0x750,
+    (char *)0x7D0
+};
 
 tEnemy gEnemies[MAX_ENEMIES];
 uint8_t gNumEnemies;
@@ -108,94 +137,89 @@ void displayInstructions(void)
     clrscr();
 }
 
-void killEnemy(uint8_t enemyNum)
+void killEnemy(tEnemy * enemy)
 {
     gShotVisible = false;
-    gScore += (gEnemies[enemyNum].type == ENEMY_COMMODORE ? 10 : 100);
-    gEnemies[enemyNum].type = ENEMY_NONE;
+    gScore += (enemy->type == ENEMY_COMMODORE ? 10 : 100);
+    enemy->type = ENEMY_NONE;
     playSound(70, 20);
     gNumEnemies--;
 }
 
-void clearEnemies(void)
+void addClearAndDrawEnemies(void)
 {
-    uint8_t enemyNum;
+    uint8_t enemiesToAdd = 0;
+    uint8_t random;
+    uint8_t x1;
+    uint8_t x2;
+    uint8_t x3;
+    uint8_t x;
+    uint8_t y;
+    tEnemy * enemy;
+    tEnemy * lastEnemy = &(gEnemies[MAX_ENEMIES]);
     
-    for (enemyNum = 0; enemyNum < MAX_ENEMIES; enemyNum++) {
-        if (gEnemies[enemyNum].type != ENEMY_NONE) {
-            cputcxy(gEnemies[enemyNum].x, gEnemies[enemyNum].y, ' ');
+    random = rand() & 0xf;
+    if (random == 0xf)
+        enemiesToAdd = 3;
+    else if (random > 8)
+        enemiesToAdd = 2;
+    else if (random > 2)
+        enemiesToAdd = 1;
+    
+    x1 = rand() % MAX_X;
+    do {
+        x2 = rand() % MAX_X;
+    } while (x2 == x1);
+    do {
+        x3 = rand() % MAX_X;
+    } while ((x3 == x1) || (x3 == x2));
+    
+    for (enemy = gEnemies; enemy < lastEnemy; enemy++) {
+        if (enemy->type != ENEMY_NONE) {
+            x = enemy->x;
+            y = enemy->y;
+            *(gScreenAddrs[y] + x) = SPACE_CHAR;
             if ((gShotVisible) &&
-                (gShotX == gEnemies[enemyNum].x) &&
-                (gShotY == gEnemies[enemyNum].y)) {
-                killEnemy(enemyNum);
+                (gShotX == x) &&
+                (gShotY == y)) {
+                killEnemy(enemy);
             } else {
-                if (++gEnemies[enemyNum].y >= MAX_Y) {
-                    gEnemies[enemyNum].type = ENEMY_NONE;
+                y++;
+                if (y >= MAX_Y) {
+                    enemy->type = ENEMY_NONE;
                     gNumEnemies--;
+                } else {
+                    enemy->y = y;
                 }
             }
         }
     }
-}
-
-
-void addAndDrawEnemies(void)
-{
-    uint8_t enemiesToAdd = 0;
-    uint8_t random;
-    uint8_t x1 = 0;
-    uint8_t x2 = 0;
-    uint8_t x3 = 0;
-    uint8_t enemyNum;
     
-    if (gNumEnemies < MAX_ENEMIES) {
-        random = rand() & 0xf;
-        if (random == 0xf)
-            enemiesToAdd = 3;
-        else if (random > 8)
-            enemiesToAdd = 2;
-        else if (random > 2)
-            enemiesToAdd = 1;
-        
-        if (gNumEnemies + enemiesToAdd > MAX_ENEMIES)
-            enemiesToAdd = MAX_ENEMIES - gNumEnemies;
-        
-        x1 = rand() % MAX_X;
-        if (enemiesToAdd > 1) {
-            do {
-                x2 = rand() % MAX_X;
-            } while (x2 == x1);
-            if (enemiesToAdd > 2) {
-                do {
-                    x3 = rand() % MAX_X;
-                } while ((x3 == x1) || (x3 == x2));
-            }
-        }
-    }
-    
-    for (enemyNum = 0; enemyNum < MAX_ENEMIES; enemyNum++) {
-        if ((gEnemies[enemyNum].type == ENEMY_NONE) &&
-            (enemiesToAdd > 0)) {
+    for (enemy = gEnemies; enemy < lastEnemy; enemy++) {
+        if ((enemiesToAdd != 0) &&
+            (enemy->type == ENEMY_NONE)) {
             gNumEnemies++;
-            gEnemies[enemyNum].y = 1;
-            gEnemies[enemyNum].type = (((rand() & 0xf) > 0xc) ? ENEMY_ATARI : ENEMY_COMMODORE);
+            enemy->y = 1;
+            enemy->type = (((rand() & 0xf) > 0xc) ? ENEMY_ATARI : ENEMY_COMMODORE);
             if (enemiesToAdd == 3) {
-                gEnemies[enemyNum].x = x3;
+                enemy->x = x3;
             } else if (enemiesToAdd == 2) {
-                gEnemies[enemyNum].x = x2;
+                enemy->x = x2;
             } else {
-                gEnemies[enemyNum].x = x1;
+                enemy->x = x1;
             }
             enemiesToAdd--;
         }
-        if (gEnemies[enemyNum].type != ENEMY_NONE) {
+        if (enemy->type != ENEMY_NONE) {
+            x = enemy->x;
+            y = enemy->y;
             if ((gShotVisible) &&
-                (gShotX == gEnemies[enemyNum].x) &&
-                (gShotY == gEnemies[enemyNum].y)) {
-                killEnemy(enemyNum);
-                cputcxy(gShotX, gShotY, ' ');
+                (gShotX == x) &&
+                (gShotY == y)) {
+                killEnemy(enemy);
+                *(gScreenAddrs[y] + x) = SPACE_CHAR;
             } else
-                cputcxy(gEnemies[enemyNum].x, gEnemies[enemyNum].y, gEnemies[enemyNum].type);
+                *(gScreenAddrs[y] + x) = enemy->type;
         }
     }
 }
@@ -205,7 +229,7 @@ void gameOver(void)
     uint16_t count;
     char ch;
     
-    cputcxy(gHeroX, MAX_Y - 1, '*');
+    *(gScreenAddrs[MAX_Y - 1] + gHeroX) = STAR_CHAR;
     
     cputsxy(10, 11, "                     ");
     cputsxy(10, 12, "      GAME OVER      ");
@@ -228,12 +252,6 @@ void gameOver(void)
         exit(0);
     }
     initGame();
-}
-
-char charAtHero(void)
-{
-    char * ptr = ((char *)0x7d0) + gHeroX;
-    return (*ptr & 0x7f);
 }
 
 void drawHero(void)
@@ -267,21 +285,21 @@ void drawHero(void)
     }
     
     if (delta != 0) {
-        ch = charAtHero();
-        if ((ch != ' ') &&
+        ch = *(((char *)0x7d0) + gHeroX);
+        if ((ch != SPACE_CHAR) &&
             (ch != HERO_CHAR))
             gameOver();
         
-        cputcxy(gHeroX, MAX_Y - 1, ' ');
+        *(gScreenAddrs[MAX_Y - 1] + gHeroX) = SPACE_CHAR;
         gHeroX += delta;
     }
     
-    ch = charAtHero();
-    if ((ch != ' ') &&
+    ch = *(((char *)0x7d0) + gHeroX);
+    if ((ch != SPACE_CHAR) &&
         (ch != HERO_CHAR))
         gameOver();
     
-    cputcxy(gHeroX, MAX_Y - 1, HERO_CHAR);
+    *(gScreenAddrs[MAX_Y - 1] + gHeroX) = HERO_CHAR;
 }
 
 void drawShot(void)
@@ -290,7 +308,7 @@ void drawShot(void)
         return;
     
     if (gShotY < MAX_Y - 1)
-        cputcxy(gShotX, gShotY, ' ');
+        *(gScreenAddrs[gShotY] + gShotX) = SPACE_CHAR;
     
     if (gShotY == 0) {
         gShotVisible = false;
@@ -298,7 +316,7 @@ void drawShot(void)
     }
     
     gShotY--;
-    cputcxy(gShotX, gShotY, SHOT_CHAR);
+    *(gScreenAddrs[gShotY] + gShotX) = SHOT_CHAR;
 }
 
 int main(void)
@@ -308,8 +326,7 @@ int main(void)
     while (true) {
         gotoxy(0, 0);
         cprintf("  SCORE: %lu", gScore);
-        clearEnemies();
-        addAndDrawEnemies();
+        addClearAndDrawEnemies();
         drawHero();
         drawShot();
         delay();
